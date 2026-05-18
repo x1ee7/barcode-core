@@ -1,0 +1,59 @@
+{
+  "name": "@upcgen/barcode-core",
+  "version": "0.1.0",
+  "description": "Zero-dependency UPC / EAN / ISBN / ITF-14 check-digit math, validation, UPC-E expansion, and random/sequential code generation. Powers upcgen.com in production.",
+  "keywords": [
+    "barcode",
+    "upc",
+    "upc-a",
+    "upc-e",
+    "ean",
+    "ean-13",
+    "ean-8",
+    "isbn",
+    "gtin",
+    "itf-14",
+    "check-digit",
+    "gs1"
+  ],
+  "license": "MIT",
+  "author": "upcgen.com",
+  "homepage": "https://github.com/x1ee7/barcode-core#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/x1ee7/barcode-core.git"
+  },
+  "bugs": {
+    "url": "https://github.com/x1ee7/barcode-core/issues"
+  },
+  "funding": "https://github.com/sponsors/x1ee7",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run test && npm run build"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
