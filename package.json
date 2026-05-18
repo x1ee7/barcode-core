@@ -1,5 +1,5 @@
 {
-  "name": "@upcgen/barcode-core",
+  "name": "@x1ee7/barcode-core",
   "version": "0.1.0",
   "description": "Zero-dependency UPC / EAN / ISBN / ITF-14 check-digit math, validation, UPC-E expansion, and random/sequential code generation. Powers upcgen.com in production.",
   "keywords": [

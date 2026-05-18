@@ -1,7 +1,7 @@
-# @upcgen/barcode-core
+# @x1ee7/barcode-core
 
 [![CI](https://github.com/x1ee7/barcode-core/actions/workflows/ci.yml/badge.svg)](https://github.com/x1ee7/barcode-core/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/@upcgen/barcode-core.svg)](https://www.npmjs.com/package/@upcgen/barcode-core)
+[![npm](https://img.shields.io/npm/v/@x1ee7/barcode-core.svg)](https://www.npmjs.com/package/@x1ee7/barcode-core)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4- db61a2)](https://github.com/sponsors/x1ee7)
 
@@ -14,7 +14,7 @@ the rendering layer stays in the app; the math is open.
 ## Install
 
 ```sh
-npm install @upcgen/barcode-core
+npm install @x1ee7/barcode-core
 ```
 
 ## Usage
@@ -26,7 +26,7 @@ import {
   upcEExpand,
   generateRandom,
   buildSequential,
-} from "@upcgen/barcode-core";
+} from "@x1ee7/barcode-core";
 
 // Append the GS1 mod-10 check digit
 computeCheckDigit("upca", "03600029145");   // → "036000291452"
