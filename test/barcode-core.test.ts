@@ -135,10 +135,12 @@ describe("input strictness", () => {
     expect(() => buildSequential("isbn", "", 1, 1)).toThrow(/978 or 979/);
     for (let i = 0; i < 100; i++) expect(generateRandom("isbn")).toMatch(/^97[89]\d{10}$/);
   });
-  it("variable-length formats reject empty text and non-ASCII Code 128", () => {
+  it("variable-length formats reject empty text and non-Latin-1 Code 128", () => {
     expect(validateBarcodeText("code128", "").ok).toBe(false);
-    expect(validateBarcodeText("code128", "café").ok).toBe(false);
-    expect(validateBarcodeText("datamatrix", "café")).toEqual({ ok: true });
+    expect(validateBarcodeText("code128", "café")).toEqual({ ok: true });
+    expect(validateBarcodeText("code128", "€").ok).toBe(false);
+    expect(validateBarcodeText("fnsku", "X00😀").ok).toBe(false);
+    expect(validateBarcodeText("datamatrix", "€")).toEqual({ ok: true });
   });
 });
 

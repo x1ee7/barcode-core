@@ -16,7 +16,8 @@ type Result = { ok: true } | { ok: false; error: string };
  * exact digit count, a valid check digit, number system 0/1 for UPC-E and a
  * 978/979 prefix for ISBN-13.
  *
- * Variable-length formats: non-empty; Code 128 and FNSKU must be ASCII.
+ * Variable-length formats: non-empty; Code 128 and FNSKU must be Latin-1
+ * (Code 128 reaches 128-255 via FNC4).
  */
 export function validateBarcodeText(format: BarcodeFormat, text: string): Result {
   assertFormat(format);
@@ -24,8 +25,8 @@ export function validateBarcodeText(format: BarcodeFormat, text: string): Result
   const spec = SPEC[format];
   if (!spec) {
     if (text.length === 0) return { ok: false, error: `${format} text is empty` };
-    if (format !== "datamatrix" && /[^\x00-\x7F]/.test(text)) {
-      return { ok: false, error: `${format} can only encode ASCII characters` };
+    if (format !== "datamatrix" && /[^\x00-\xFF]/.test(text)) {
+      return { ok: false, error: `${format} can only encode Latin-1 characters` };
     }
     return { ok: true };
   }
