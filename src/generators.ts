@@ -1,52 +1,41 @@
-import { type BarcodeFormat, SPEC, isVariableLength } from "./formats.js";
+import { type BarcodeFormat, SPEC, assertFormat, extractDigits, isVariableLength } from "./formats.js";
 import { computeCheckDigit } from "./checkdigit.js";
+import { validateBarcodeText } from "./validate.js";
 
-/**
- * Expand a 6-digit UPC-E compressed body (plus number system) into its
- * 11-digit UPC-A payload, following the GS1 zero-suppression rules.
- */
-export function upcEExpand(numSystem: string, comp: string): string {
-  const last = comp[5]!;
-  if (last >= "0" && last <= "2") return numSystem + comp.slice(0, 2) + last + "0000" + comp.slice(2, 5);
-  if (last === "3") return numSystem + comp.slice(0, 3) + "00000" + comp.slice(3, 5);
-  if (last === "4") return numSystem + comp.slice(0, 4) + "00000" + comp[4]!;
-  return numSystem + comp.slice(0, 5) + "0000" + last;
+export { upcEExpand } from "./upce.js";
+
+const ALNUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+function randomDigits(n: number): string {
+  let out = "";
+  for (let i = 0; i < n; i++) out += Math.floor(Math.random() * 10).toString();
+  return out;
 }
 
 /** Generate a single random, structurally valid code for the given format. */
 export function generateRandom(format: BarcodeFormat): string {
-  if (format === "fnsku") {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let out = "X00";
-    for (let i = 0; i < 7; i++) out += chars[Math.floor(Math.random() * chars.length)];
-    return out;
-  }
+  assertFormat(format);
   if (isVariableLength(format)) {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let out = "";
-    for (let i = 0; i < 10; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    let out = format === "fnsku" ? "X00" : "";
+    const len = format === "fnsku" ? 7 : 10;
+    for (let i = 0; i < len; i++) out += ALNUM[Math.floor(Math.random() * ALNUM.length)];
     return out;
   }
   if (format === "upce") {
-    const ns = Math.random() < 0.5 ? "0" : "1";
-    let comp = "";
-    for (let i = 0; i < 6; i++) comp += Math.floor(Math.random() * 10).toString();
-    const upca11 = upcEExpand(ns, comp);
-    let sum = 0;
-    for (let i = 0; i < 11; i++) sum += parseInt(upca11[i]!, 10) * (i % 2 === 0 ? 3 : 1);
-    const check = ((10 - (sum % 10)) % 10).toString();
-    return ns + comp + check;
+    return computeCheckDigit(format, (Math.random() < 0.5 ? "0" : "1") + randomDigits(6));
   }
   const spec = SPEC[format]!;
-  let payload = format === "isbn" ? "978" : "";
-  while (payload.length < spec.payloadLen) payload += Math.floor(Math.random() * 10).toString();
-  return computeCheckDigit(format, payload);
+  const prefix = format === "isbn" ? (Math.random() < 0.5 ? "978" : "979") : "";
+  return computeCheckDigit(format, prefix + randomDigits(spec.payloadLen - prefix.length));
 }
 
 /**
  * Build a contiguous run of `count` codes from a shared prefix, starting at
  * `start`, each terminated with a valid check digit. Throws for
- * variable-length formats or an over-long prefix.
+ * variable-length formats, an over-long or non-numeric prefix, a negative or
+ * non-integer `start`/`count`, a run that would overflow the available
+ * digits, or a prefix that yields invalid codes (e.g. UPC-E number system
+ * other than 0/1, ISBN not starting 978/979).
  */
 export function buildSequential(
   format: BarcodeFormat,
@@ -54,18 +43,31 @@ export function buildSequential(
   start: number,
   count: number,
 ): string[] {
+  assertFormat(format);
   if (isVariableLength(format)) {
     throw new Error(`sequential mode is not supported for ${format}`);
   }
+  if (!Number.isSafeInteger(start) || start < 0) {
+    throw new Error(`start must be a non-negative integer (got ${start})`);
+  }
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new Error(`count must be a non-negative integer (got ${count})`);
+  }
   const spec = SPEC[format]!;
-  const cleanPrefix = prefix.replace(/\D/g, "");
+  const cleanPrefix = extractDigits(prefix, "prefix");
   const suffixLen = spec.payloadLen - cleanPrefix.length;
-  if (suffixLen < 1) throw new Error(`prefix '${prefix}' too long for ${format} (max ${spec.payloadLen - 1})`);
+  if (suffixLen < 1) throw new Error(`prefix '${prefix}' too long for ${format} (max ${spec.payloadLen - 1} digits)`);
+  if (count > 0 && (start + count - 1).toString().length > suffixLen) {
+    throw new Error(
+      `sequential overflow: ${start + count - 1} does not fit in ${suffixLen} digit(s) after prefix '${prefix}'`,
+    );
+  }
   const codes: string[] = [];
   for (let i = 0; i < count; i++) {
-    const suffix = (start + i).toString().padStart(suffixLen, "0");
-    if (suffix.length > suffixLen) throw new Error("sequential overflow");
-    codes.push(computeCheckDigit(format, cleanPrefix + suffix));
+    const code = computeCheckDigit(format, cleanPrefix + (start + i).toString().padStart(suffixLen, "0"));
+    const check = validateBarcodeText(format, code);
+    if (!check.ok) throw new Error(`prefix '${prefix}' produces invalid ${format} codes: ${check.error}`);
+    codes.push(code);
   }
   return codes;
 }

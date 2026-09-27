@@ -17,6 +17,33 @@ export type BarcodeFormat =
   | "datamatrix"
   | "fnsku";
 
+/** Every supported format, in declaration order. */
+const FORMATS: ReadonlySet<string> = new Set<BarcodeFormat>([
+  "upca", "upce", "ean13", "ean8", "isbn", "itf14", "code128", "datamatrix", "fnsku",
+]);
+
+/**
+ * Throw a descriptive error for an unknown format. Guards plain-JS callers
+ * against typos like "UPCA" silently validating or crashing.
+ */
+export function assertFormat(format: unknown): asserts format is BarcodeFormat {
+  if (typeof format !== "string" || !FORMATS.has(format)) {
+    throw new Error(`unknown barcode format '${String(format)}' (expected one of: ${[...FORMATS].join(", ")})`);
+  }
+}
+
+/**
+ * Strip the separators people commonly type into numeric codes (spaces and
+ * hyphens) and return the bare digits. Throws on anything else, so stray
+ * letters are never silently discarded.
+ */
+export function extractDigits(text: string, what: string): string {
+  if (typeof text !== "string") throw new Error(`${what} must be a string (got ${typeof text})`);
+  const bad = text.match(/[^\d\s-]/);
+  if (bad) throw new Error(`${what} may only contain digits, spaces, and hyphens (found '${bad[0]}')`);
+  return text.replace(/\D/g, "");
+}
+
 const VARIABLE_LENGTH: Set<BarcodeFormat> = new Set(["code128", "datamatrix", "fnsku"]);
 
 /** True for symbologies that carry an arbitrary-length payload (no check digit). */

@@ -3,7 +3,7 @@
 [![CI](https://github.com/x1ee7/barcode-core/actions/workflows/ci.yml/badge.svg)](https://github.com/x1ee7/barcode-core/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@x1ee7/barcode-core.svg)](https://www.npmjs.com/package/@x1ee7/barcode-core)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4- db61a2)](https://github.com/sponsors/x1ee7)
+[![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-db61a2)](https://github.com/sponsors/x1ee7)
 
 **Zero-dependency UPC / EAN / ISBN / ITF-14 barcode check-digit math,
 validation, UPC-E expansion, and random / sequential code generation for
@@ -46,15 +46,16 @@ computeCheckDigit("ean13", "978013110362"); // → "9780131103627"
 validateBarcodeText("upca", "036000291452"); // → { ok: true }
 validateBarcodeText("upca", "036000291450"); // → { ok: false, error: "invalid check digit — expected 2, got 0" }
 
-// UPC-E (6-digit body + number system) → 11-digit UPC-A payload
-upcEExpand("0", "123455"); // → "01234500005"
+// UPC-E (number system + 6-digit body); check digit comes from the UPC-A expansion
+computeCheckDigit("upce", "0123456"); // → "01234565"
+upcEExpand("0", "123455");            // → "01234500005"
 
 // One random, structurally valid code
 generateRandom("ean13"); // → e.g. "4006381333931"
 
 // A contiguous run sharing a prefix, each with a valid check digit
 buildSequential("ean13", "978", 1, 3);
-// → ["9780000000012", "9780000000029", "9780000000036"]
+// → ["9780000000019", "9780000000026", "9780000000033"]
 ```
 
 ## How the GS1 mod-10 check digit works
@@ -70,27 +71,37 @@ checkDigit = (10 − (weightedSum mod 10)) mod 10
 
 `computeCheckDigit(format, payload)` applies the correct positional weights
 for each format (exposed as `SPEC`) and returns the full code with the check
-digit appended. `validateBarcodeText` recomputes it and also enforces the
-expected digit count for fixed-length formats.
+digit appended. Spaces and hyphens are ignored, short payloads are
+left-padded with zeros, and anything else (letters, too many digits) throws.
+`validateBarcodeText` recomputes the check digit and also enforces the
+expected digit count, UPC-E number system 0/1, and the ISBN-13 978/979
+prefix.
+
+UPC-E is the one exception to the positional weights: per GS1, its check
+digit is computed on the expanded UPC-A form, which `computeCheckDigit` and
+`validateBarcodeText` handle for you.
 
 ## Supported formats
 
 **Fixed-length** (have a computable check digit):
 `upca`, `upce`, `ean13`, `ean8`, `isbn`, `itf14`
 
-**Variable-length** (no fixed check digit — validation always passes):
+**Variable-length** (no check digit — validation only rejects empty text,
+and non-ASCII text for `code128` / `fnsku`):
 `code128`, `datamatrix`, `fnsku`
+
+Every function throws a descriptive error for an unknown format string.
 
 ## API
 
 | Export | Description |
 | --- | --- |
-| `computeCheckDigit(format, payload)` | Returns payload + GS1 mod-10 check digit. Throws for variable-length formats. |
-| `validateBarcodeText(format, text)` | `{ ok: true }` or `{ ok: false, error }`. Variable-length formats always pass. |
+| `computeCheckDigit(format, payload)` | Returns payload + GS1 mod-10 check digit. Throws for variable-length formats, non-digits, or a payload longer than the format allows. |
+| `validateBarcodeText(format, text)` | `{ ok: true }` or `{ ok: false, error }`. |
 | `normalizeText(format, text)` | Upper-cases except Data Matrix (case-sensitive). |
-| `upcEExpand(numSystem, comp)` | Expands a UPC-E body to its 11-digit UPC-A payload. |
+| `upcEExpand(numSystem, comp)` | Expands a UPC-E body to its 11-digit UPC-A payload. Throws unless `numSystem` is 0/1 and `comp` is 6 digits. |
 | `generateRandom(format)` | One random, structurally valid code. |
-| `buildSequential(format, prefix, start, count)` | Contiguous run of check-digit-terminated codes. |
+| `buildSequential(format, prefix, start, count)` | Contiguous run of check-digit-terminated codes. Throws up front on overflow, bad `start`/`count`, or a prefix that can't yield valid codes. |
 | `isVariableLength(format)` / `isCaseSensitive(format)` | Format predicates. |
 | `SPEC` | Payload length + positional weights per fixed-length format. |
 
