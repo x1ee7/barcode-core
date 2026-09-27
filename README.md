@@ -87,7 +87,7 @@ digit is computed on the expanded UPC-A form, which `computeCheckDigit` and
 `upca`, `upce`, `ean13`, `ean8`, `isbn`, `itf14`
 
 **Variable-length** (no check digit — validation only rejects empty text,
-and non-ASCII text for `code128` / `fnsku`):
+and text outside Latin-1 for `code128` / `fnsku`):
 `code128`, `datamatrix`, `fnsku`
 
 Every function throws a descriptive error for an unknown format string.
