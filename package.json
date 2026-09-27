@@ -1,6 +1,6 @@
 {
   "name": "@x1ee7/barcode-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Zero-dependency UPC / EAN / ISBN / ITF-14 check-digit math, validation, UPC-E expansion, and random/sequential code generation. Powers upcgen.com in production.",
   "keywords": [
     "barcode",
@@ -33,9 +33,14 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
@@ -45,8 +50,9 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run test && npm run build"
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
   },
   "devDependencies": {
     "tsup": "^8.3.5",
